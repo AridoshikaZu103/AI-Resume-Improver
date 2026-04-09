@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Resume Improver</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* small helpers for the backend-not-running UI */
+        .backend-notice { margin: 20px auto; max-width:700px; background:#fff6f6; border:1px solid #f2c2c2; padding:16px; border-radius:8px; color:#6b0b0b; }
+        .copy-btn { margin-left:10px; padding:6px 10px; border-radius:6px; border: none; background:#1976d2; color:white; cursor:pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Welcome to AI Resume Improver</h1>
+
+    <p>
+        Improve your resume instantly using AI.<br>
+        Get suggestions, ATS keywords, and a professional score.
+    </p>
+
+    <ul style="text-align:left; display:inline-block; margin-top:20px;">
+        <li>✔ Upload your resume</li>
+        <li>✔ Get smart suggestions</li>
+        <li>✔ Improve ATS score</li>
+        <li>✔ Download improved version</li>
+    </ul>
+
+    <br>
+
+    <button id="startBtn" onclick="startApp()">Get Started</button>
+
+    <div id="backendNotice" style="display:none" class="backend-notice" role="alert">
+        <strong>Backend not reachable</strong>
+        <p>The web UI cannot reach the backend server at <code id="backendUrl"></code>.</p>
+        <p>Open a terminal, navigate to the <code>backend</code> folder and run:</p>
+        <pre id="startCommand" style="background:#f6f8fa;padding:8px;border-radius:6px;border:1px solid #eee">cd backend && npm start</pre>
+        <div>
+            <button class="copy-btn" onclick="copyStartCmd()">Copy command</button>
+            <button class="copy-btn" onclick="showExtraHelp()">Show help</button>
+        </div>
+        <div id="extraHelp" style="margin-top:12px;display:none">
+            <p>Steps (Windows):</p>
+            <ol>
+                <li>Open PowerShell / Terminal.</li>
+                <li>cd to project folder, e.g. <code>cd C:\Users\You\path\to\ai-resume-improver\backend</code></li>
+                <li>Install dependencies (first time): <code>npm install</code></li>
+                <li>Start backend: <code>npm start</code></li>
+            </ol>
+            <p>After the server starts, press the "Get Started" button again.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const BACKEND_HOST = 'http://127.0.0.1:8000'; // change only if your backend runs elsewhere
+
+async function startApp() {
+    const notice = document.getElementById('backendNotice');
+    const backendUrlEl = document.getElementById('backendUrl');
+    backendUrlEl.innerText = BACKEND_HOST + '/api/health';
+
+    // Try to reach backend health check
+    try {
+        const res = await fetch(BACKEND_HOST + '/api/health', { method: 'GET', cache: 'no-store' , mode: 'cors' });
+        if (res.ok) {
+            // backend is running -> go to registration/login page
+            window.location.href = 'register.html';
+            return;
+        } else {
+            // show instructions
+            notice.style.display = 'block';
+        }
+    } catch (err) {
+        // couldn't reach backend
+        notice.style.display = 'block';
+    }
+}
+
+function copyStartCmd() {
+    const cmd = document.getElementById('startCommand').innerText;
+    navigator.clipboard.writeText(cmd).then(() => {
+        alert('Command copied to clipboard. Open a terminal and paste it to start the backend.');
+    }).catch(() => {
+        alert('Unable to copy — please select the command and copy it manually.');
+    });
+}
+
+function showExtraHelp() {
+    const d = document.getElementById('extraHelp');
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
+</body>
+</html>

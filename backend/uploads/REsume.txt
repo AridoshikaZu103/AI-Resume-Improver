@@ -1,0 +1,40 @@
+# Create the resume text file
+@"
+JOHN DOE
+Senior Software Developer
+john.doe@email.com | (555) 123-4567 | linkedin.com/in/johndoe
+
+PROFESSIONAL SUMMARY
+Experienced full-stack software developer with 5+ years of expertise in building scalable applications using Python, JavaScript, and AWS cloud services. Proven track record of improving system performance and delivering projects on time.
+
+TECHNICAL SKILLS
+Languages: Python, JavaScript, Java, SQL
+Frameworks: React, Node.js, Django, Flask
+Cloud & DevOps: AWS (EC2, S3, Lambda), Docker, Kubernetes
+Databases: PostgreSQL, MongoDB, MySQL
+Tools: Git, GitHub, Jenkins, Linux
+
+PROFESSIONAL EXPERIENCE
+
+Senior Developer - Tech Solutions Inc. (2021 - Present)
+- Led development of microservices architecture using Docker and Kubernetes, reducing deployment time by 40%
+- Optimized database queries improving API response time by 50%
+- Managed AWS infrastructure including EC2 instances and S3 buckets
+- Mentored 3 junior developers on best practices
+
+Full Stack Developer - Digital Innovations LLC (2019 - 2021)
+- Developed responsive web applications using React and Node.js
+- Built RESTful APIs handling 1M+ requests daily
+- Implemented CI/CD pipelines using Jenkins, reducing release cycles by 30%
+- Collaborated with UX team to improve user experience
+
+EDUCATION
+Bachelor of Science in Computer Science
+State University (2019)
+
+CERTIFICATIONS
+AWS Solutions Architect Associate (2021)
+"@ | Out-File uploads/REsume.txt -Encoding UTF8 -Force
+
+Write-Host "✓ Resume file created successfully" -ForegroundColor Green
+Get-ChildItem uploads/REsume.txt

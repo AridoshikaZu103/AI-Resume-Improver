@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Sign up with Gmail</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .input-field { width: 80%; padding: 10px; margin: 10px auto; display: block; border-radius: 6px; border: 1px solid #ccc; }
+        .password-container { position: relative; width: 80%; margin: auto; }
+        .password-container span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; }
+        .btn-group { display:flex; flex-direction:column; gap:12px; margin-top:12px; align-items:center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 style="color:#db4437;">Gmail Sign Up</h1>
+
+    <input type="text" id="name" placeholder="Full Name" class="input-field">
+    <input type="email" id="email" placeholder="Email (Gmail)" class="input-field">
+
+    <div class="password-container">
+        <input type="password" id="password" placeholder="Create Password" class="input-field">
+        <span onclick="togglePassword('password')">👁</span>
+    </div>
+
+    <div class="password-container">
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" class="input-field">
+        <span onclick="togglePassword('confirmPassword')">👁</span>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="signup()" class="primary-btn">Sign Up with Gmail</button>
+        <button onclick="goBack()" class="secondary">Back</button>
+    </div>
+
+    <p id="message" style="margin-top:12px"></p>
+</div>
+
+<script>
+function togglePassword(id) {
+    const field = document.getElementById(id);
+    field.type = field.type === "password" ? "text" : "password";
+}
+
+function showMessage(msg, isError = false) {
+    const el = document.getElementById('message');
+    el.innerText = msg;
+    el.style.color = isError ? '#b71c1c' : '#1b5e20';
+    console.log('UI message:', msg);
+}
+
+// Signup logic
+function signup() {
+    const name = document.getElementById("name").value.trim();
+    const email = document.getElementById("email").value.trim();
+    const pass = document.getElementById("password").value;
+    const confirmPass = document.getElementById("confirmPassword").value;
+
+    console.log('Signup attempt', { name, email });
+
+    // Basic checks
+    if (name === "" || email === "" || pass === "" || confirmPass === "") {
+        showMessage("Please fill all fields", true);
+        return;
+    }
+
+    if (!email.toLowerCase().endsWith("@gmail.com")) {
+        showMessage("Please use a valid Gmail address", true);
+        return;
+    }
+
+    if (pass !== confirmPass) {
+        showMessage("Passwords do not match", true);
+        return;
+    }
+
+    // Save credentials locally (demo only)
+    try {
+        localStorage.setItem("username", email);
+        localStorage.setItem("password", pass);
+        console.log('Saved credentials for', email);
+    } catch (err) {
+        console.error('Failed to save credentials to localStorage', err);
+        showMessage('Unable to save account locally: ' + err.message, true);
+        return;
+    }
+
+    showMessage("Gmail account registered successfully!");
+    setTimeout(() => {
+        // redirect to analyzer page (lowercase)
+        window.location.href = "register.html";
+    }, 800);
+}
+
+function goBack() {
+    window.location.href = "register.html";
+}
+</script>
+
+</body>
+</html>

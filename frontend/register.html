@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Login / Register</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .input-field { width: 80%; padding: 10px; margin: 10px auto; border-radius: 6px; border: 1px solid #ccc; display:block; }
+        .password-container { position: relative; width: 80%; margin: auto; }
+        .password-container span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; }
+        .btn-group { display:flex; flex-direction:column; gap:12px; margin-top:18px; align-items:center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1> Welcome</h1>
+
+    <input type="email" id="email" placeholder="Enter Gmail" class="input-field">
+
+    <div class="password-container">
+        <input type="password" id="password" placeholder="Enter Password" class="input-field" style="width:100%;padding:10px;">
+        <span onclick="togglePassword()">👁</span>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="handleAuth()" class="primary-btn">Login / Register</button>
+        <button id="gmailBtn" onclick="gmailLogin()" class="gmail-btn">Sign Up With Gmail</button>
+    </div>
+
+    <p id="message" style="margin-top:12px"></p>
+</div>
+
+<script>
+function togglePassword() {
+    const passField = document.getElementById("password");
+    passField.type = passField.type === "password" ? "text" : "password";
+}
+
+function showMessage(msg, isError = false) {
+    const el = document.getElementById('message');
+    el.innerText = msg;
+    el.style.color = isError ? '#b71c1c' : '#1b5e20';
+    console.log('UI message:', msg);
+}
+
+function handleAuth() {
+    const email = document.getElementById("email").value.trim();
+    const pass = document.getElementById("password").value.trim();
+
+    if (email === "" || pass === "") {
+        showMessage("Please enter email and password", true);
+        return;
+    }
+
+    const storedEmail = localStorage.getItem("email");
+    const storedPass = localStorage.getItem("password");
+
+    // If no account exists yet, create one and redirect to analyzer
+    if (!storedEmail) {
+        localStorage.setItem("email", email);
+        localStorage.setItem("password", pass);
+        console.log('New user created:', email);
+
+        showMessage("New user created! Redirecting...");
+        setTimeout(() => {
+            window.location.href = "analyzer.html";
+        }, 800);
+        return;
+    }
+
+    // If account exists, check credentials
+    if (email === storedEmail && pass === storedPass) {
+        console.log('Login success for', email);
+        showMessage("Login successful! Redirecting...");
+        setTimeout(() => {
+            window.location.href = "analyzer.html";
+        }, 600);
+        return;
+    } else {
+        console.log('Login failed. Entered:', email, 'Stored:', storedEmail);
+        showMessage("Wrong credentials", true);
+        return;
+    }
+}
+
+function gmailLogin() {
+    // navigate to gmail signup page (lowercase filename)
+    console.log('Navigating to Gmail.html for Gmail sign up');
+    window.location.href = "Gmail.html";
+}
+</script>
+
+</body>
+</html>
