@@ -52,8 +52,8 @@ These features extend the core functionality and are fully implemented:
 | 🎯 **ATS Gap Analysis** | Compares resume keywords against a pasted Job Description to identify matched and missing skills |
 | 💾 **Download Improved Resume** | Allows users to download the improved resume output *(In Development)* |
 | 🟢 **Heuristic Mode (Offline)** | Local rule-based analyzer that works without any API key — free and offline |
-| 🤖 **OpenAI Integration** | Optional upgrade to OpenAI Chat Completions for higher-quality AI-powered analysis |
-| 🔄 **Auto Fallback** | If OpenAI fails or is unavailable, the system automatically falls back to the heuristic analyzer |
+| 🤖 **GeminiAI Integration** | Optional upgrade to GeminiAI Chat Completions for higher-quality AI-powered analysis |
+| 🔄 **Auto Fallback** | If GeminiAI fails or is unavailable, the system automatically falls back to the heuristic analyzer |
 | 📄 **PDF Generation Helper** | Includes a `generate_pdf.js` utility to create sample test resumes from plain text |
 | ✅ **PDF Verification Script** | Includes a `verify_pdf.js` utility to validate PDF structure before upload |
  
@@ -78,7 +78,7 @@ A dedicated `/api/resume/gap-analyze` endpoint that:
 - Requires simultaneous parsing of two different text sources (PDF + free-form text)
 - Keyword matching must be intelligent — handling variations, stopword filtering, and partial matches
 - Section-level scoring adds granularity beyond a single overall score
-- Must work reliably in both heuristic (offline) and OpenAI modes
+- Must work reliably in both heuristic (offline) and GeminiAI modes
  
 **Example Output:**
 ```json
@@ -102,7 +102,7 @@ This feature transforms the tool from a generic resume reviewer into a *job-spec
 ---
 
 - 🔍 **Heuristic (local, free)**: analyzes the resume using local rules — no API keys required.
-- ⚡ **OpenAI (optional)**: uses OpenAI Chat completions when an `OPENAI_API_KEY` is provided for higher-quality output. If OpenAI is unavailable, the server automatically falls back to the heuristic analyzer.
+- ⚡ **GeminiAI (optional)**: uses GeminiAI Chat completions when an `GeminiAI_API_KEY` is provided for higher-quality output. If GeminiAI is unavailable, the server automatically falls back to the heuristic analyzer.
 
 📦 This repository provides a simple frontend (HTML/CSS/JS) and a Node.js Express backend that accepts PDF upload, extracts text with `pdf-parse`, analyzes it, and returns structured JSON for the UI.
 
@@ -136,7 +136,7 @@ This feature transforms the tool from a generic resume reviewer into a *job-spec
 **Optional / additional**
 - 🏷️ ATS keyword extraction
 - 💾 Download improved resume
-- 🚀 Optional OpenAI integration (if you provide an API key)
+- 🚀 Optional GeminiAI integration (if you provide an API key)
 - 🟢 Local heuristic analyzer — runs offline and free
 
 ---
@@ -145,7 +145,7 @@ This feature transforms the tool from a generic resume reviewer into a *job-spec
 
 - 🔙 **Backend**: Node.js, Express, multer, pdf-parse
 - 🎨 **Frontend**: static HTML, CSS, vanilla JS
-- 🤖 **Optional**: OpenAI (chat completions) — enabled when `OPENAI_API_KEY` is provided
+- 🤖 **Optional**: GeminiAI (chat completions) — enabled when `GeminiAI_API_KEY` is provided
 - 🔨 **Dev tooling**: nodemon (dev)
 
 ---
@@ -213,7 +213,7 @@ ai-resume-improver-backend@1.0.0 C:\Users\ADMIN\OneDrive\Desktop\ai-resume-impro
 +-- express@4.22.1
 +-- multer@1.4.5-lts.2
 +-- nodemon@2.0.22
-+-- openai@4.104.0
++-- GeminiAI@4.104.0
 +-- pdf-parse@1.1.4
 `-- pdfkit@0.18.0
 ```
@@ -223,7 +223,7 @@ ai-resume-improver-backend@1.0.0 C:\Users\ADMIN\OneDrive\Desktop\ai-resume-impro
 - If `npm list` reports missing packages or you cloned the repo fresh, run `npm install` (it reads package.json and installs all dependencies).
 - If you prefer to install specific packages manually, you can run:
 ```bash
-npm install express cors multer pdf-parse pdfkit dotenv openai nodemon
+npm install express cors multer pdf-parse pdfkit dotenv GeminiAI nodemon
 ```
 but `npm install` is usually sufficient.
 
@@ -240,7 +240,7 @@ You should see:
 ```code
 Resume analyzer listening on http://localhost:8000 (mode: heuristic)
 # or
-Resume analyzer listening on http://localhost:8000 (mode: OpenAI enabled)
+Resume analyzer listening on http://localhost:8000 (mode: GeminiAI enabled)
 ```
 
 ---
@@ -388,7 +388,7 @@ npm start
 ```
 ✅ **Expected Output:**
 ```code
-Resume analyzer listening on http://localhost:8000 (mode: OpenAI enabled)
+Resume analyzer listening on http://localhost:8000 (mode: GeminiAI enabled)
 ```
 Keep this terminal open! 🟢
 
@@ -408,7 +408,7 @@ curl http://localhost:8000/api/health
 ✅ **Expected Response:**
 
 ```json
-{"status":"Backend running (OpenAI mode)","timestamp":"2026-04-02T09:30:45.123Z"}
+{"status":"Backend running (GeminiAI mode)","timestamp":"2026-04-02T09:30:45.123Z"}
 ```
 
 ---
@@ -428,7 +428,7 @@ curl -F "file=@C:\Users\ADMIN\OneDrive\Desktop\ai-resume-improver\backend\upload
     "suggestions": "Add clear contact details (email and phone) at the top. Use stronger action verbs.",
     "keywords": "python, aws, docker, javascript, react, node.js, sql, postgresql",
     "improved_resume": "Summary: Experienced full-stack software developer with 5+ years of expertise in building scalable applications using Python, JavaScript, and AWS...",
-    "provider": "openai"
+    "provider": "GeminiAI"
   }
 }
 ```
@@ -574,15 +574,15 @@ Suggestions: Add Kubernetes and microservices experience
 
 The backend auto-detects mode:
 
-- 🤖 If `OPENAI_API_KEY` is present (and `openai` package is installed), it attempts to use OpenAI.
-- 🟢 If OpenAI is not available or fails, or if `OPENAI_API_KEY` is absent, the backend runs the local heuristic analyzer.
+- 🤖 If `GeminiAI_API_KEY` is present (and `GeminiAI` package is installed), it attempts to use GeminiAI.
+- 🟢 If GeminiAI is not available or fails, or if `GeminiAI_API_KEY` is absent, the backend runs the local heuristic analyzer.
 
 **⚙️ Important env variables:**
 - `PORT` (default 8000)
 - `NODE_ENV`
-- `OPENAI_API_KEY` (optional)
-- `OPENAI_MODEL` (optional, default: gpt-3.5-turbo)
-- `PROVIDER` (optional; `auto`, `heuristic`, or `openai` — if you want to force behavior)
+- `GeminiAI_API_KEY` (optional)
+- `GeminiAI_MODEL` (optional, default: gpt-3.5-turbo)
+- `PROVIDER` (optional; `auto`, `heuristic`, or `GeminiAI` — if you want to force behavior)
 
 📄 Example `.env` (heuristic-only):
 ```
@@ -591,13 +591,13 @@ NODE_ENV=development
 PROVIDER=heuristic
 ```
 
-📄 Example `.env` (OpenAI enabled):
+📄 Example `.env` (GeminiAI enabled):
 ```
 PORT=8000
 NODE_ENV=development
 PROVIDER=auto
-OPENAI_API_KEY=sk-REPLACE_WITH_YOUR_KEY
-OPENAI_MODEL=gpt-3.5-turbo
+GeminiAI_API_KEY=sk-REPLACE_WITH_YOUR_KEY
+GeminiAI_MODEL=gpt-3.5-turbo
 ```
 
 ---

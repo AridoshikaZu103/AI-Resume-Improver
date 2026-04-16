@@ -1,5 +1,5 @@
 // backend/server.js
-// Resume analyzer with optional OpenAI + heuristic fallback
+// Resume analyzer with optional GeminiAI + heuristic fallback
 // Added: /api/resume/gap-analyze route for ATS Gap Analysis (Resume vs JD)
 // FIXED: Improved error handling in gap-analyze route
 
@@ -111,26 +111,29 @@ function analyzeResumeText(text) {
 }
 
 /* -------------------------
-   OpenAI Analyzer (if configured)
+   GeminiAI Analyzer (if configured)
    ------------------------- */
 
-let useOpenAI = false;
-let openaiClient = null;
-if (process.env.OPENAI_API_KEY) {
+let useGeminiAI = false;
+let geminiModel = null;
+if (process.env.GEMINI_API_KEY) {
   try {
-    const { OpenAI } = require('openai');
-    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    useOpenAI = true;
-    console.log('OpenAI key detected — OpenAI mode enabled');
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    geminiModel = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-pro' });
+    useGeminiAI = true;
+    console.log('✅ GEMINI_API_KEY detected — GEMINI mode ENABLED');
   } catch (err) {
-    console.warn('OPENAI_API_KEY is set but openai package could not be loaded. Falling back to heuristic. To enable OpenAI install "openai" package.');
-    useOpenAI = false;
+    console.warn('❌ GEMINI_API_KEY is set but @google/generative-ai could not be loaded.');
+    console.warn('   Solution: npm install @google/generative-ai');
+    console.warn('   Falling back to heuristic mode...');
+    useGeminiAI = false;
   }
 } else {
-  console.log('No OPENAI_API_KEY detected — running heuristic analyzer only');
+  console.log('⚠️  No GEMINI_API_KEY set — heuristic mode only');
 }
 
-async function analyzeWithOpenAI(resumeText) {
+async function analyzeWithGeminiAI(resumeText) {
   // Build prompt instructing JSON output.
   const system = `You are an expert resume reviewer. Analyze the resume text provided and return ONLY valid JSON (no extra commentary) using this exact schema:
 {
@@ -141,20 +144,23 @@ async function analyzeWithOpenAI(resumeText) {
 }`;
   const user = `Resume text:\n\n${resumeText}`;
 
-  // Use chat completions (OpenAI SDK interface may vary; this uses "openai" package object)
+  // Use Google's Generative AI SDK
   try {
-    const response = await openaiClient.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: system },
-        { role: 'user', content: user }
+    const response = await geminiModel.generateContent({
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: `${system}\n\n${user}` }]
+        }
       ],
-      temperature: 0.6,
-      max_tokens: 1200
+      generationConfig: {
+        temperature: 0.6,
+        maxOutputTokens: 1200
+      }
     });
 
-    const raw = response?.choices?.[0]?.message?.content;
-    if (!raw) throw new Error('OpenAI returned empty response');
+    const raw = response?.response?.text?.();
+    if (!raw) throw new Error('Gemini returned empty response');
 
     // Try parse JSON directly
     let parsed = null;
@@ -175,30 +181,31 @@ async function analyzeWithOpenAI(resumeText) {
         suggestions: null,
         keywords: null,
         improved_resume: raw,
-        raw_openai: raw
+        raw_response: raw
       };
     }
 
     // Normalize parsed values
     return {
-      score: parsed.score ?? parsed?.score ?? null,
-      suggestions: parsed.suggestions ?? parsed?.suggestions ?? '',
-      keywords: parsed.keywords ?? parsed?.keywords ?? '',
-      improved_resume: parsed.improved_resume ?? parsed?.improved_resume ?? ''
+      score: parsed.score ?? null,
+      suggestions: parsed.suggestions ?? '',
+      keywords: parsed.keywords ?? '',
+      improved_resume: parsed.improved_resume ?? '',
+      gemini_used: true
     };
-
   } catch (err) {
-    // bubble up
+    console.error('Gemini API error:', err.message);
     throw err;
   }
 }
+  
 
 /* -------------------------
    Routes
    ------------------------- */
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: useOpenAI ? 'Backend running (OpenAI mode)' : 'Backend running (heuristic mode)', timestamp: new Date().toISOString() });
+  res.json({ status: useGeminiAI ? 'Backend running (GeminiAI mode)' : 'Backend running (heuristic mode)', timestamp: new Date().toISOString() });
 });
 
 app.post('/api/resume/analyze', upload.single('file'), async (req, res) => {
@@ -224,38 +231,38 @@ app.post('/api/resume/analyze', upload.single('file'), async (req, res) => {
     const text = safeTrim(pdfData.text || '');
     if (!text) throw new Error('No readable text found in PDF (maybe it is image-only).');
 
-    // Use OpenAI if available; if OpenAI fails, fall back to heuristic
-    if (useOpenAI) {
+    // Use GeminiAI if available; if GeminiAI fails, fall back to heuristic
+    if (useGeminiAI) {
       try {
-        const openaiResult = await analyzeWithOpenAI(text);
-        // If OpenAI returned null score and no structured fields, but returned a raw string, fallback to heuristic partial merge
-        if ((openaiResult.score === null || openaiResult.score === undefined) &&
-            (!openaiResult.suggestions && !openaiResult.keywords && openaiResult.improved_resume)) {
+        const GeminiAIResult = await analyzeWithGeminiAI(text);
+        // If GeminiAI returned null score and no structured fields, but returned a raw string, fallback to heuristic partial merge
+        if ((GeminiAIResult.score === null || GeminiAIResult.score === undefined) &&
+            (!GeminiAIResult.suggestions && !GeminiAIResult.keywords && GeminiAIResult.improved_resume)) {
           // We'll still try to compute heuristic keywords and score for structured fields,
-          // but keep OpenAI's improved_resume text.
+          // but keep GeminiAI's improved_resume text.
           const heuristic = analyzeResumeText(text);
           return res.json({
             result: {
               score: heuristic.score,
               suggestions: heuristic.suggestions,
               keywords: heuristic.keywords,
-              improved_resume: openaiResult.improved_resume,
-              provider: 'openai_fallback_heuristic'
+              improved_resume: GeminiAIResult.improved_resume,
+              provider: 'GeminiAI_fallback_heuristic'
             }
           });
         }
 
         return res.json({
           result: {
-            score: openaiResult.score ?? null,
-            suggestions: openaiResult.suggestions ?? '',
-            keywords: openaiResult.keywords ?? '',
-            improved_resume: openaiResult.improved_resume ?? '',
-            provider: 'openai'
+            score: GeminiAIResult.score ?? null,
+            suggestions: GeminiAIResult.suggestions ?? '',
+            keywords: GeminiAIResult.keywords ?? '',
+            improved_resume: GeminiAIResult.improved_resume ?? '',
+            provider: 'GeminiAI'
           }
         });
-      } catch (openaiErr) {
-        console.error('OpenAI call failed, falling back to heuristic:', openaiErr.message || openaiErr);
+      } catch (GeminiAIErr) {
+        console.error('GeminiAI call failed, falling back to heuristic:', GeminiAIErr.message || GeminiAIErr);
         // continue to heuristic fallback
       }
     }
@@ -492,5 +499,5 @@ app.post('/api/resume/gap-analyze', upload.single('file'), async (req, res) => {
 
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
-  console.log(`Resume analyzer listening on http://localhost:${PORT} (mode: ${useOpenAI ? 'OpenAI enabled' : 'heuristic'})`);
+  console.log(`Resume analyzer listening on http://localhost:${PORT} (mode: ${useGeminiAI ? 'GeminiAI enabled' : 'heuristic'})`);
 });
